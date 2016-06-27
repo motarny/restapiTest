@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Marcin
- * Date: 2016-06-27
- * Time: 11:13
- */
+// todo kody błędów wraz z odpowiadającymi komunikatami
 
 namespace Lib;
 

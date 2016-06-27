@@ -1,36 +1,58 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Marcin
- * Date: 2016-06-27
- * Time: 13:19
- */
-
 namespace Lib\Locations\Storage;
 
-
+/**
+ * Class Mysql
+ *
+ * Obsługa magazynu danych z Lokalizacjami - w bazie MySQL (wykorzystuje PDO)
+ *
+ * @package Lib\Locations\Storage
+ */
 class Mysql implements StorageInterface
 {
     const TABLE_NAME_LOCATIONS = 'locations';
 
-    static $pdoInstance = null;
-
-    protected $_locationsCollectionArray = array();
-
+    /**
+     * @var array
+     */
     protected $_pdoConfig = array();
 
+    /**
+     * @var \PDO
+     */
+    static $pdoInstance = null;
 
+    /**
+     * @var array
+     */
+    protected $_locationsCollectionArray = array();
+
+
+    /**
+     * Mysql Storage constructor.
+     *
+     * @param $config
+     */
     public function __construct($config)
     {
         $this->_pdoConfig = $config;
     }
 
 
+    /**
+     * Metoda ustawia kolekcję lokalizacji, na których zostaną wykonane operacje
+     *
+     * @param array $collectionData
+     */
     public function setCollectionArray($collectionData = array())
     {
         $this->_locationsCollectionArray = $collectionData;
     }
 
+    /**
+     * Metoda zatwierdzająca wszystkie zmiany wprowadzone w lokalizacjach
+     * w kolekcji - aktualizuje lub dodaje nowe wpisy do bazy
+     */
     public function flush()
     {
         $pdo = $this->getPdo();
@@ -79,6 +101,14 @@ class Mysql implements StorageInterface
     }
 
 
+    /**
+     * Metoda pobierająca z bazy rekordy lokalizacji.
+     * Opcjonalnie przyjmuje parametry wyszukiwania i sortowania.
+     *
+     * @param array $params
+     *
+     * @return array
+     */
     public function getLocations($params = array())
     {
         $pdo = $this->getPdo();
@@ -140,6 +170,8 @@ class Mysql implements StorageInterface
 
 
     /**
+     * Metoda pomocnicza zwraca instancję PDO
+     *
      * @return \PDO
      */
     public function getPdo()
@@ -149,9 +181,8 @@ class Mysql implements StorageInterface
         }
 
         $pc = $this->_pdoConfig;
-
         self::$pdoInstance = new \PDO($pc['dsn'], $pc['user'], $pc['password']);
-
+        
         return self::$pdoInstance;
     }
 

@@ -8,7 +8,13 @@
 
 namespace Lib\Locations;
 
-
+/**
+ * Class Location
+ *
+ * Klasa typu data object, do przechowywania informacji o lokalizacji
+ *
+ * @package Lib\Locations
+ */
 class Location
 {
     const STATUS_STANDARD = 1;
@@ -84,6 +90,8 @@ class Location
 
     /**
      * @param int $id
+     *
+     * @return $this
      */
     public function setId($id)
     {
@@ -104,6 +112,8 @@ class Location
 
     /**
      * @param string $description
+     *
+     * @return $this
      */
     public function setDescription($description)
     {
@@ -125,6 +135,8 @@ class Location
 
     /**
      * @param string $address
+     *
+     * @return $this
      */
     public function setAddress($address)
     {
@@ -146,6 +158,8 @@ class Location
 
     /**
      * @param float $latitude
+     *
+     * @return $this
      */
     public function setLatitude($latitude)
     {
@@ -167,6 +181,8 @@ class Location
 
     /**
      * @param float $longitude
+     *
+     * @return $this
      */
     public function setLongitude($longitude)
     {
@@ -186,6 +202,11 @@ class Location
         return $this->_locationStatus == Location::STATUS_HEADQUARTERS;
     }
 
+    /**
+     * Metoda ustawia daną lokalizację jako Headquarters
+     *
+     * @return $this
+     */
     public function setAsHeadquarters()
     {
         if (!$this->isHeadquarters()) {
@@ -198,6 +219,11 @@ class Location
         return $this;
     }
 
+    /**
+     * @param $distance
+     *
+     * @return $this
+     */
     public function setDistanceFromHeadquarters($distance)
     {
         $this->_distanceFromHeadquarters = $distance;
@@ -206,12 +232,20 @@ class Location
     }
 
 
+    /**
+     * @return int
+     */
     public function getDistanceFromHeadquarters()
     {
         return $this->_distanceFromHeadquarters;
     }
 
 
+    /**
+     * Metoda pomocnicza zwracająca dane Lokalizacji w formie tablicy
+     *
+     * @return array
+     */
     public function toArray()
     {
         return array(
@@ -226,16 +260,32 @@ class Location
     }
 
 
+    /**
+     * Metoda ustawia flagę do usunięcia.
+     *
+     * @return $this
+     */
     public function markAsDeleted()
     {
         $this->_toDelete = true;
+
+        return $this;
     }
 
+    /**
+     * Zwraca flagę, czy Lokalizacja jest do usunięcia
+     * @return bool
+     */
     public function isDeleted()
     {
         return (bool)$this->_toDelete;
     }
 
+    /**
+     * Flaga zwracająca informację, czy obiekt był modyfikowany po odczycie z bazy.
+     *
+     * @return bool
+     */
     public function isModified()
     {
         return (bool)$this->_isModified;

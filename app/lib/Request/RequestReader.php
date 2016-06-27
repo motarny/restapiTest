@@ -1,26 +1,42 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Marcin
- * Date: 2016-06-26
- * Time: 22:05
- */
-
 namespace Lib\Request;
 
 use Lib\Api\Api;
 
+/**
+ * Class RequestReader
+ *
+ * Klasa odczytująca parametry z requesta. Singleton
+ *
+ * @package Lib\Request
+ */
 class RequestReader
 {
+    /**
+     * @var RequestReader
+     */
     static $requestInstance = null;
 
+    /**
+     * @var array
+     */
     protected $_requestData = array();
 
 
+    /**
+     * RequestReader constructor.
+     * Prywatna, wymuszamy tworzenie przez ::instance();
+     */
     private function __construct()
     {
     }
 
+    /**
+     * Generuje i/lub zwraca Singleton
+     *
+     * @return RequestReader
+     * @throws \Exception
+     */
     static function instance()
     {
         if (!self::$requestInstance) {
@@ -32,6 +48,11 @@ class RequestReader
     }
 
 
+    /**
+     * Metoda robocza odczytu parametrów requesta
+     *
+     * @throws \Exception
+     */
     protected function init()
     {
         parse_str($_SERVER['QUERY_STRING'], $queryParams);
@@ -62,16 +83,34 @@ class RequestReader
     }
 
 
+    /**
+     * Zwraca metodę requesta (get/post/put/delete...)
+     * @return mixed
+     */
     public function getHttpMethod()
     {
         return $this->_requestData['method'];
     }
 
+
+    /**
+     * Metoda zwraca nazwę zasobu do jakiego chcemy uzyskać dostęp.
+     * Jest to pierwszy parametr w ścieżce.
+     *
+     * @return string
+     */
     public function resourcesRequest()
     {
         return $this->_requestData['resourcesRequest'];
     }
 
+
+    /**
+     * Zwraca wskazany parametr requesta
+     * @param $paramName
+     *
+     * @return array
+     */
     public function getRequestData($paramName) {
         if ($paramName) {
             return $this->_requestData[$paramName];
@@ -80,9 +119,17 @@ class RequestReader
         return $this->_requestData;
     }
 
+    /**
+     * Zwraca wskazaną wartość przekazaną do requesta
+     *
+     * @param $paramName
+     *
+     * @return mixed
+     */
     public function getRequestParam($paramName) {
         return $this->_requestData['requestParams'][$paramName];
     }
+
 
     public function isGet()
     {
