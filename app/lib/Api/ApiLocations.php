@@ -9,46 +9,98 @@
 namespace Lib\Api;
 
 
+use Lib\Locations\Location;
 use Lib\Locations\LocationsCollection;
-use Lib\Locations\Storage\PhpArray;
+use Lib\Locations\Storage\Mysql;
+use Lib\Locations\Storage\StorageInterface;
 use Lib\Request\RequestReader;
 use Lib\Response\Response;
 
-class ApiLocations extends Api
+class ApiLocations
 {
-    static function run(RequestReader $requestObj, Response $responseObj)
+    static function run(RequestReader $requestObj, Response $responseObj, StorageInterface $storageObj)
     {
         $requestData = $requestObj->getRequestData('resourcesFullQuery');
+        $locationId = $requestData[1];
 
-        var_dump($requestData);
+        $locationsCollection = new LocationsCollection($storageObj);
 
         if ($requestObj->isGet()) {
             // GET
-            if (!$requestData[1]) {
-                // pobranie listy lokalizacji
-                $locationsCollection = new LocationsCollection(new PhpArray());
-                if ($requestObj->getRequestData('queryParams')) {
-                    $getLocations = $locationsCollection->getFiltered($requestObj->getRequestData('queryParams'));
-                    $responseObj->setResponseBodySuccess(array('action' => 'lista lokalizacji z jakims filtrem'));
-                } else {
-                    $getLocations = $locationsCollection->getAll();
-                    $responseObj->setResponseBodySuccess(array('action' => 'lista lokalizacji bez filtra'));
+            if (isset($locationId)) {
+                // pobranie informacji o konkretnej lokalizacji
+                try {
+                    $getLocation = $locationsCollection->getById($locationId);
+                    $responseObj->setResponseBodySuccess($getLocation->toArray());
+                } catch (\Exception $e) {
+                    $responseObj->setHeaderHttpCode(404);
+                    $responseObj->setResponseBodyError($e->getCode(), $e->getMessage());
                 }
             } else {
-                // pobranie informacji o konkretnej lokalizacji
-                $responseObj->setResponseBodySuccess(array('action' => 'pobranie info o lokalizacji: ' . $requestData[1]));
+                // pobranie listy lokalizacji
+                $getLocations = $locationsCollection->getLocations($requestObj->getRequestData('queryParams'));
+
+                $returnArray = array();
+                if (count($getLocations) > 0) {
+                    foreach ($getLocations as $locationObj) {
+                        $returnArray[] = $locationObj->toArray();
+                    }
+                    $responseObj->setResponseBodySuccess(array('count' => count($returnArray), 'locations' => $returnArray));
+                }
             }
         }
 
         if ($requestObj->isPost()) {
             // POST
-            if (!$requestData[1]) {
-                // utworzenie nowej lokalizacji
-                $responseObj->setResponseBodySuccess(array('action' => 'utworzenie nowej lokalizacji'));
+            $action = '';
+            if ($locationId) {
+                // aktualizacja lokajizacji
+                try {
+                    $locationObj = $locationsCollection->getById($locationId);
+                } catch (\Exception $e) {
+                    $responseObj->setHeaderHttpCode(404);
+                    throw $e;
+                }
+                $action = 'update';
             } else {
-                // aktualizacja lokajizacji (analogicznie jak PUT)
-                $responseObj->setResponseBodySuccess(array('action' => 'aktualizacja lokalizacji ' . $requestData[1]));
+                // tworzenie nowej lokalizacji
+                $locationObj = new Location();
+                $locationsCollection->addLocation($locationObj);
+                $action = 'create';
             }
+
+            $locationObj->setDescription($requestObj->getRequestParam('description'))
+                ->setAddress($requestObj->getRequestParam('address'))
+                ->setLatitude($requestObj->getRequestParam('latitude'))
+                ->setLongitude($requestObj->getRequestParam('longitude'));
+
+            if ($requestObj->getRequestParam('is_headquarters') == 'y') {
+                $locationObj->setAsHeadquarters();
+            }
+
+            $locationsCollection->flush();
+
+            $responseObj->setResponseBodySuccess(array('action' => $action, 'id' => $locationObj->getId()));
+        }
+
+
+        if ($requestObj->isDelete()) {
+            if (!$locationId) {
+                throw new \Exception("Location id is required", 3);
+            }
+
+            // usun lokalizacje
+            try {
+                $locationObj = $locationsCollection->getById($locationId);
+            } catch (\Exception $e) {
+                $responseObj->setHeaderHttpCode(404);
+                throw $e;
+            }
+
+            $locationsCollection->deleteLocation($locationObj);
+            $locationsCollection->flush();
+
+            $responseObj->setResponseBodySuccess(array('action' => 'delete', 'id' => $locationId));
         }
 
     }

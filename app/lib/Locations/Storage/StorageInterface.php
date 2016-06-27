@@ -13,10 +13,9 @@ use Lib\Locations\Location;
 
 interface StorageInterface
 {
+    function setCollectionArray($collectionData = array());
 
     function getLocations($params = array());
-
-    function addLocation(Location $locationObj);
 
     function flush();
 

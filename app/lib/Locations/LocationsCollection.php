@@ -24,28 +24,75 @@ class LocationsCollection
     }
 
 
-    public function getAll()
+    public function getLocations($params = array())
     {
-        return $this->_storageObj->getLocations();
-    }
+        $excludeLocationsIdsToLoad = array_keys($this->_locationsCollectionArray);
 
+        $params['excludedIds'] = $excludeLocationsIdsToLoad;
 
-    public function getFiltered($params = array())
-    {
-        return $this->_storageObj->getLocations($params);
+        $locationsData = $this->_storageObj->getLocations($params);
+
+        foreach ($locationsData as $locationData) {
+            $locationObj = new Location($locationData);
+            $this->_locationsCollectionArray[$locationObj->getId()] = $locationObj;
+        }
+
+        return $this->_locationsCollectionArray;
     }
 
     public function getById($id)
     {
-        return $this->_storageObj->getLocations(array(
+        if ($this->_locationsCollectionArray[$id]) {
+            return $this->_locationsCollectionArray[$id];
+        }
+
+        $locationData = $this->_storageObj->getLocations(array(
             'id' => $id
         ));
+
+        if (!$locationData) {
+            throw new \Exception('Location [' . $id . '] not found', 4);
+        }
+
+        $locationObj = new Location($locationData);
+        $this->_locationsCollectionArray[$locationObj->getId()] = $locationObj;
+
+        return $locationObj;
+    }
+
+
+    protected function getNotDeleted()
+    {
+        $returnArray = array();
+        foreach ($this->_locationsCollectionArray as $locationObj) {
+            if (!$locationObj->isDeleted()) {
+                $returnArray[$locationObj->getId()] = $locationObj;
+            }
+        }
+
+        return $returnArray;
     }
 
 
     public function addLocation(Location $locationObj)
     {
-        $this->_storageObj->addLocation($locationObj);
+        if (!$locationObj->getId()) {
+            $locationId = max(array_keys($this->_locationsCollectionArray)); // tymczasowy, przy zapisie do bazy może się zmienić
+        } else {
+            $locationId = $locationObj->getId();
+        }
+        $this->_locationsCollectionArray[$locationId] = $locationObj;
+    }
+
+    public function deleteLocation(Location $locationObj)
+    {
+        $locationObj->markAsDeleted();
+    }
+
+    public function flush()
+    {
+        $this->_storageObj->setCollectionArray($this->_locationsCollectionArray);
+        $this->_storageObj->flush();
     }
 
 }

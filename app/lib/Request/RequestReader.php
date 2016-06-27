@@ -38,13 +38,15 @@ class RequestReader
         $this->_requestData = array(
             'method' => strtoupper($_SERVER['REQUEST_METHOD']),
             'queryParams' => $queryParams,
+            'requestParams' => $_REQUEST,
             'accept' => $_SERVER['HTTP_ACCEPT'],
         );
 
         $pathParams = array();
         if ($_SERVER['PATH_INFO']) {
             // jeśli uruchamiane z api.php/... (standardowo)
-            $pathParams = explode(DIRECTORY_SEPARATOR, $_SERVER['PATH_INFO']);
+            $pathInfo = rtrim($_SERVER['PATH_INFO'], DIRECTORY_SEPARATOR);
+            $pathParams = explode(DIRECTORY_SEPARATOR, $pathInfo);
             array_shift($pathParams);
         } else {
             // todo opcjonalnie do parsowania REQUEST_URI
@@ -70,12 +72,16 @@ class RequestReader
         return $this->_requestData['resourcesRequest'];
     }
 
-    public function getRequestData($param) {
-        if ($param) {
-            return $this->_requestData[$param];
+    public function getRequestData($paramName) {
+        if ($paramName) {
+            return $this->_requestData[$paramName];
         }
 
         return $this->_requestData;
+    }
+
+    public function getRequestParam($paramName) {
+        return $this->_requestData['requestParams'][$paramName];
     }
 
     public function isGet()

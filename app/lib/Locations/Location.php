@@ -43,14 +43,34 @@ class Location
     /**
      * @var int
      */
-    protected $_status = Location::STATUS_STANDARD;
+    protected $_distanceFromHeadquarters = -1;
+
+    /**
+     * @var int
+     */
+    protected $_locationStatus = Location::STATUS_STANDARD;
+
+    protected $_isModified = false;
+    protected $_toDelete = false;
 
 
     /**
      * Location constructor.
      */
-    public function __construct()
+    public function __construct($params = array())
     {
+        if ($params) {
+            $this->setId($params['id'])
+                ->setDescription($params['description'])
+                ->setAddress($params['address'])
+                ->setLatitude($params['latitude'])
+                ->setLongitude($params['longitude'])
+                ->setDistanceFromHeadquarters($params['distance_from_headquarters']);
+
+            if ($params['headquarters'] == 'y' || $params['headquarters'] === true) {
+                $this->setAsHeadquarters();
+            }
+        }
     }
 
 
@@ -68,6 +88,7 @@ class Location
     public function setId($id)
     {
         $this->_id = $id;
+        $this->_isModified = true;
 
         return $this;
     }
@@ -86,7 +107,10 @@ class Location
      */
     public function setDescription($description)
     {
-        $this->_description = $description;
+        if ($description != $this->_description) {
+            $this->_description = $description;
+            $this->_isModified = true;
+        }
 
         return $this;
     }
@@ -104,7 +128,10 @@ class Location
      */
     public function setAddress($address)
     {
-        $this->_address = $address;
+        if ($address != $this->_address) {
+            $this->_address = $address;
+            $this->_isModified = true;
+        }
 
         return $this;
     }
@@ -122,7 +149,10 @@ class Location
      */
     public function setLatitude($latitude)
     {
-        $this->_latitude = $latitude;
+        if ($latitude != $this->_latitude) {
+            $this->_latitude = floatval($latitude);
+            $this->_isModified = true;
+        }
 
         return $this;
     }
@@ -140,7 +170,10 @@ class Location
      */
     public function setLongitude($longitude)
     {
-        $this->_longitude = $longitude;
+        if ($longitude != $this->_longitude) {
+            $this->_longitude = floatval($longitude);
+            $this->_isModified = true;
+        }
 
         return $this;
     }
@@ -150,15 +183,62 @@ class Location
      */
     public function isHeadquarters()
     {
-        return $this->_status == Location::STATUS_HEADQUARTERS;
+        return $this->_locationStatus == Location::STATUS_HEADQUARTERS;
     }
 
     public function setAsHeadquarters()
     {
-        $this->_status = Location::STATUS_HEADQUARTERS;
+        if (!$this->isHeadquarters()) {
+            $this->_locationStatus = Location::STATUS_HEADQUARTERS;
+            $this->_isModified = true;
+
+            // todo akcja przeliczenia odleglosci miedzy hq a pozostalymi
+        }
 
         return $this;
     }
 
+    public function setDistanceFromHeadquarters($distance)
+    {
+        $this->_distanceFromHeadquarters = $distance;
+
+        return $this;
+    }
+
+
+    public function getDistanceFromHeadquarters()
+    {
+        return $this->_distanceFromHeadquarters;
+    }
+
+
+    public function toArray()
+    {
+        return array(
+            'id' => $this->getId(),
+            'description' => $this->getDescription(),
+            'address' => $this->getAddress(),
+            'longitude' => $this->getLongitude(),
+            'latitude' => $this->getLatitude(),
+            'is_headquarters' => $this->isHeadquarters(),
+            'distance_from_headquarters' => $this->getDistanceFromHeadquarters()
+        );
+    }
+
+
+    public function markAsDeleted()
+    {
+        $this->_toDelete = true;
+    }
+
+    public function isDeleted()
+    {
+        return (bool)$this->_toDelete;
+    }
+
+    public function isModified()
+    {
+        return (bool)$this->_isModified;
+    }
 
 }
