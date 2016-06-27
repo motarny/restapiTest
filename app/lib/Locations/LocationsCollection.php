@@ -1,6 +1,7 @@
 <?php
 namespace Lib\Locations;
 
+use Lib\Google\GoogleApiUsage;
 use Lib\Locations\Storage\StorageInterface;
 
 /**
@@ -20,6 +21,11 @@ class LocationsCollection
     protected $_storageObj;
 
     /**
+     * @var Location
+     */
+    protected $_headquartersObj;
+
+    /**
      * tablica z lokalizacjami w użyciu (utworzone, odczytane)
      *
      * @var array
@@ -35,6 +41,8 @@ class LocationsCollection
     public function __construct(StorageInterface $storageObj)
     {
         $this->_storageObj = $storageObj;
+
+        $this->_headquartersObj = $this->getHeadquarters();
     }
 
 
@@ -90,6 +98,23 @@ class LocationsCollection
     }
 
 
+    public function getHeadquarters()
+    {
+        $locationData = $this->_storageObj->getLocations(array('hq' => true));
+
+        if (!$locationData) {
+            throw new \Exception('Location headquarters not found', 4);
+        }
+
+        $locationObj = new Location($locationData);
+
+        $this->_headquartersObj = $locationObj;
+
+        return $locationObj;
+    }
+
+
+
     /**
      * Metoda dodaje nową lokalizację do kolekcji
      *
@@ -123,8 +148,49 @@ class LocationsCollection
      */
     public function flush()
     {
+        foreach ($this->_locationsCollectionArray as $location) {
+            if (!$location->isHeadquarters() && $location->getDistanceFromHeadquarters() == -1) {
+                $distance = GoogleApiUsage::getDistance($this->_headquartersObj, $location);
+                $location->setDistanceFromHeadquarters($distance);
+            }
+            if ($location->isHeadquarters()) {
+                $location->setDistanceFromHeadquarters(0);
+                if ($location->isGeoModified()) {
+                    // aktualizacja pozycji HQ - trzeba przeliczyc wszystkie lokalizacje
+                    $recalculateDistances = true;
+                }
+            }
+        }
         $this->_storageObj->setCollectionArray($this->_locationsCollectionArray);
         $this->_storageObj->flush();
+
+
+        if ($recalculateDistances) {
+            $this->recalculateDistances();
+        }
+
+    }
+
+
+    public function recalculateDistances()
+    {
+        unset($this->_locationsCollectionArray);
+
+        $this->getLocations();
+        $hqObj = $this->getHeadquarters();
+
+        foreach ($this->_locationsCollectionArray as $location) {
+            if ($location->isHeadquarters()) {
+                // nie przeliczamy odleglosci do samego siebie
+                continue;
+            }
+            $distance = GoogleApiUsage::getDistance($hqObj, $location);
+            $location->setDistanceFromHeadquarters($distance);
+        }
+
+        $this->_storageObj->setCollectionArray($this->_locationsCollectionArray);
+        $this->_storageObj->flush();
+
     }
 
 }

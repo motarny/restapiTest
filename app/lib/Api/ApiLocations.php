@@ -3,7 +3,6 @@ namespace Lib\Api;
 
 use Lib\Locations\Location;
 use Lib\Locations\LocationsCollection;
-use Lib\Locations\Storage\Mysql;
 use Lib\Locations\Storage\StorageInterface;
 use Lib\Request\RequestReader;
 use Lib\Response\Response;
@@ -80,10 +79,6 @@ class ApiLocations
                 ->setAddress($requestObj->getRequestParam('address'))
                 ->setLatitude($requestObj->getRequestParam('latitude'))
                 ->setLongitude($requestObj->getRequestParam('longitude'));
-
-            if ($requestObj->getRequestParam('is_headquarters') == 'y') {
-                $locationObj->setAsHeadquarters();
-            }
 
             $locationsCollection->flush();
 

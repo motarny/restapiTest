@@ -7,6 +7,7 @@
  */
 
 namespace Lib\Locations;
+use Lib\Google\GoogleApiUsage;
 
 /**
  * Class Location
@@ -17,10 +18,6 @@ namespace Lib\Locations;
  */
 class Location
 {
-    const STATUS_STANDARD = 1;
-    const STATUS_HEADQUARTERS = 2;
-
-
     /**
      * @var int
      */
@@ -47,16 +44,26 @@ class Location
     protected $_longitude;
 
     /**
+     * Tablica z danymi pobranymi z google api
+     * @var array
+     */
+    protected $_geoData = array();
+
+    /**
      * @var int
      */
     protected $_distanceFromHeadquarters = -1;
 
     /**
-     * @var int
+     * @var string
      */
-    protected $_locationStatus = Location::STATUS_STANDARD;
+    protected $_headquarters = 'n';
 
+    /**
+     * kilka przydatnych flag
+     */
     protected $_isModified = false;
+    protected $_isGeoModified = false;
     protected $_toDelete = false;
 
 
@@ -71,11 +78,8 @@ class Location
                 ->setAddress($params['address'])
                 ->setLatitude($params['latitude'])
                 ->setLongitude($params['longitude'])
-                ->setDistanceFromHeadquarters($params['distance_from_headquarters']);
-
-            if ($params['headquarters'] == 'y' || $params['headquarters'] === true) {
-                $this->setAsHeadquarters();
-            }
+                ->setHeadquatersFlag($params['headquarters'])
+                ->setDistanceFromHeadquarters($params['distance_from_hq']);
         }
     }
 
@@ -96,7 +100,6 @@ class Location
     public function setId($id)
     {
         $this->_id = $id;
-        $this->_isModified = true;
 
         return $this;
     }
@@ -117,10 +120,10 @@ class Location
      */
     public function setDescription($description)
     {
-        if ($description != $this->_description) {
-            $this->_description = $description;
+        if ($this->_description && $description != $this->_description) {
             $this->_isModified = true;
         }
+        $this->_description = $description;
 
         return $this;
     }
@@ -140,10 +143,10 @@ class Location
      */
     public function setAddress($address)
     {
-        if ($address != $this->_address) {
-            $this->_address = $address;
+        if ($this->_address && $address != $this->_address) {
             $this->_isModified = true;
         }
+        $this->_address = $address;
 
         return $this;
     }
@@ -163,10 +166,15 @@ class Location
      */
     public function setLatitude($latitude)
     {
-        if ($latitude != $this->_latitude) {
-            $this->_latitude = floatval($latitude);
-            $this->_isModified = true;
+        if (!$latitude) {
+            $latitude = $this->getGetoData('lat');
         }
+        if ($this->_latitude && $latitude != $this->_latitude) {
+            $this->_isModified = true;
+            $this->_isGeoModified = true;
+            $this->setDistanceFromHeadquarters(-1);
+        }
+        $this->_latitude = floatval($latitude);
 
         return $this;
     }
@@ -186,38 +194,60 @@ class Location
      */
     public function setLongitude($longitude)
     {
-        if ($longitude != $this->_longitude) {
-            $this->_longitude = floatval($longitude);
-            $this->_isModified = true;
+        if (!$longitude) {
+            $longitude = $this->getGetoData('lng');
         }
+        if ($this->_longitude && $longitude != $this->_longitude) {
+            $this->_isGeoModified = true;
+            $this->_isModified = true;
+            $this->setDistanceFromHeadquarters(-1);
+        }
+        $this->_longitude = floatval($longitude);
 
         return $this;
     }
+
+
+    /**
+     * Pobiera informacje lokalizacyjne
+     *
+     * @param $param
+     *
+     * @return mixed
+     */
+    protected function getGetoData($param)
+    {
+        if (!$this->_geoData) {
+            $this->_geoData = GoogleApiUsage::getLocationInfo($this);
+        }
+
+        return $this->_geoData[$param];
+
+    }
+
+
+    /**
+     * Ustawia flagę, czy jest to siedziba
+     * @param $flag
+     *
+     * @return $this
+     */
+    public function setHeadquatersFlag($flag)
+    {
+        $this->_headquarters = $flag;
+
+        return $this;
+    }
+
 
     /**
      * @return bool
      */
     public function isHeadquarters()
     {
-        return $this->_locationStatus == Location::STATUS_HEADQUARTERS;
+        return $this->_headquarters == 'y';
     }
 
-    /**
-     * Metoda ustawia daną lokalizację jako Headquarters
-     *
-     * @return $this
-     */
-    public function setAsHeadquarters()
-    {
-        if (!$this->isHeadquarters()) {
-            $this->_locationStatus = Location::STATUS_HEADQUARTERS;
-            $this->_isModified = true;
-
-            // todo akcja przeliczenia odleglosci miedzy hq a pozostalymi
-        }
-
-        return $this;
-    }
 
     /**
      * @param $distance
@@ -226,7 +256,10 @@ class Location
      */
     public function setDistanceFromHeadquarters($distance)
     {
-        $this->_distanceFromHeadquarters = $distance;
+        if ($this->_distanceFromHeadquarters && $distance != $this->_distanceFromHeadquarters) {
+            $this->_distanceFromHeadquarters = $distance;
+            $this->_isModified = true;
+        }
 
         return $this;
     }
@@ -255,7 +288,7 @@ class Location
             'longitude' => $this->getLongitude(),
             'latitude' => $this->getLatitude(),
             'is_headquarters' => $this->isHeadquarters(),
-            'distance_from_headquarters' => $this->getDistanceFromHeadquarters()
+            'distance_from_hq' => $this->getDistanceFromHeadquarters()
         );
     }
 
@@ -274,6 +307,7 @@ class Location
 
     /**
      * Zwraca flagę, czy Lokalizacja jest do usunięcia
+     *
      * @return bool
      */
     public function isDeleted()
@@ -289,6 +323,17 @@ class Location
     public function isModified()
     {
         return (bool)$this->_isModified;
+    }
+
+
+    /**
+     * Flaga zwracająca informację, czy były modyfikowane dane lokalizacyjne
+     *
+     * @return bool
+     */
+    public function isGeoModified()
+    {
+        return (bool)$this->_isGeoModified;
     }
 
 }

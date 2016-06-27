@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lokalizacje - zadanie rekrutacyjne</title>
+
+    <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <script type="text/javascript" async="" src="js/locations.js"></script>
+    <script type="text/javascript" async="" src="js/request.js"></script>
+</head>
+<body>
+
+
+<div class="container">
+
+    <div class="column location-form">
+        <h3>Formularz dodawania/edycji lokalizacji</h3>
+        <div class="form-item">
+            <label>Nazwa lokalizacji</label> <input type="text" name="form_description" id="form_description"/>
+        </div>
+        <div class="form-item">
+            <label>Adres lokalizacji</label> <input type="text" name="form_address" id="form_address"/>
+        </div>
+        <div class="form-item">
+            <label>Szerokość geograficzna</label> <input type="text" name="form_latitude" id="form_latitude" placeholder="puste = automatycznie"/>
+        </div>
+        <div class="form-item">
+            <label>Długość geograficzna</label> <input type="text" name="form_longitude" id="form_longitude" placeholder="puste = automatycznie"/>
+        </div>
+
+        <button type="button" id="form_button_label" onclick="Locations.saveForm()">Dodaj nową lokalizację</button>
+        <br/>
+        <button type="button" onclick="Locations.clearEditForm()">Resetuj formularz</button>
+
+    </div>
+
+    <div class="column locations-list">
+        <h3>Lista lokalizacji</h3>
+        <div class="search-form">
+            <div class="form-item">
+                <label>Nazwa / adres</label> <input type="text" name="form_search_text" id="form_search_text"/>
+            </div>
+            <div class="form-item">
+                <label>Maks odległość od siedziby HQ</label> <input type="text" name="form_search_distance" id="form_search_distance"/>km
+            </div>
+
+            <button type="button" onclick="Locations.getListBySearch()">Szukaj</button>
+
+            <div class="locations-list" id="locations_list_container"></div>
+
+        </div>
+
+    </div>
+
+</div>
+</body>
+
+<script></script>
+
+</html>

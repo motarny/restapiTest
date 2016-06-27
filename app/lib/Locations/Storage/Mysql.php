@@ -65,18 +65,19 @@ class Mysql implements StorageInterface
                 ':address' => $locationObj->getAddress(),
                 ':latitude' => $locationObj->getLatitude(),
                 ':longitude' => $locationObj->getLongitude(),
-                ':headquarters' => ($locationObj->isHeadquarters() ? 'y' : 'n')
+                ':distance_from_hq' => $locationObj->getDistanceFromHeadquarters()
             );
 
             if ($locationId && $locationObj->isModified() && !$locationObj->isDeleted()) {
                 $dataArray[':id'] = $locationId;
+
                 // AKTUALIZACJA
                 $query = 'UPDATE ' . Mysql::TABLE_NAME_LOCATIONS . ' SET
                     description = :description,
                     address = :address,
                     latitude = :latitude,
                     longitude = :longitude,
-                    headquarters = :headquarters
+                    distance_from_hq = :distance_from_hq
                     WHERE id = :id';
 
                 $stmt = $pdo->prepare($query);
@@ -89,8 +90,8 @@ class Mysql implements StorageInterface
             } else if (!$locationId) {
                 // UTWORZENIE NOWEGO
                 $query = 'INSERT INTO ' . Mysql::TABLE_NAME_LOCATIONS . '
-                    (description, address, latitude, longitude, headquarters)
-                    VALUES (:description, :address, :latitude, :longitude, :headquarters)';
+                    (description, address, latitude, longitude, distance_from_hq)
+                    VALUES (:description, :address, :latitude, :longitude, :distance_from_hq)';
 
                 $stmt = $pdo->prepare($query);
                 $stmt->execute($dataArray);
@@ -124,6 +125,17 @@ class Mysql implements StorageInterface
             return $getData;
         }
 
+        if ($params['hq']) {
+            // proste pobranie pojedynczego wpisu
+            $query = 'SELECT * FROM ' . Mysql::TABLE_NAME_LOCATIONS . ' WHERE headquarters = "y"';
+            $stmt = $pdo->prepare($query);
+            $stmt->execute(array($params['id']));
+
+            $getData = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            return $getData;
+        }
+
         $queryWhere = array();
         $queryData = array();
 
@@ -134,8 +146,9 @@ class Mysql implements StorageInterface
         }
 
         if ($params['distance_from_hq']) {
-            $queryWhere[] = 'distance_from_hq <= :distance';
+            $queryWhere[] = '(distance_from_hq <= :distance AND distance_from_hq != -1)';
             $queryData['distance'] = $params['distance_from_hq'];
+            $params['order_by'] = 'distance_from_hq';
         }
 
         if (!empty($params['excludedIds'])) {
@@ -145,7 +158,7 @@ class Mysql implements StorageInterface
         if ($params['order_by'] and in_array($params['order_by'], array('id', 'description', 'distance_from_hq'))) {
             $queryOrderBy = ' ORDER BY ' . $params['order_by'] . ' ' . ($params['order'] == 'desc' ? 'desc' : 'asc');
         } else {
-            $queryOrderBy = ' ORDER BY id';
+            $queryOrderBy = ' ORDER BY description';
         }
 
         $query = 'SELECT * FROM ' . Mysql::TABLE_NAME_LOCATIONS;
@@ -182,7 +195,7 @@ class Mysql implements StorageInterface
 
         $pc = $this->_pdoConfig;
         self::$pdoInstance = new \PDO($pc['dsn'], $pc['user'], $pc['password']);
-        
+
         return self::$pdoInstance;
     }
 
