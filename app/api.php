@@ -14,9 +14,9 @@ $response = Response::instance();
 $response->setHeaderContentType($request->getRequestData('accept'));
 
 $pdoConfig = array(
-    'dsn' => 'mysql:dbname=rekrutacja_home;host=37.187.247.30',
-    'user' => 'rekrutacja_home',
-    'password' => 'rekrutacja_home'
+    'dsn' => 'mysql:dbname=rekrutacja_home;host=***',
+    'user' => '***',
+    'password' => '***'
 );
 
 $storageObj = new Mysql($pdoConfig);
