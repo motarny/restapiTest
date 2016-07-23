@@ -14,7 +14,7 @@ $response = Response::instance();
 $response->setHeaderContentType($request->getRequestData('accept'));
 
 $pdoConfig = array(
-    'dsn' => 'mysql:dbname=rekrutacja_home;host=***',
+    'dsn' => 'mysql:dbname=***;host=***',
     'user' => '***',
     'password' => '***'
 );
